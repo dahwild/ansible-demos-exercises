@@ -1,0 +1,9 @@
+-
+  name: Check connectivity to target servers
+  hosts: target1
+  become: yes
+  tasks:
+    - include_vars: variables.yml
+  roles:
+    - maria_db
+    - check_packages

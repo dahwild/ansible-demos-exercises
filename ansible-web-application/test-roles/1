@@ -1,0 +1,216 @@
+---
+- name: "Check if NGINX is installed"
+  package_facts:
+    manager: "auto"
+
+- name: "Check whether the packages are installed"
+  debug:
+    msg: "firewall found"
+  #loop: "{{ packages }}"
+  when: "'firewalld' in ansible_facts.packages"
+
+- name: "FirewallD test result"
+  debug: 
+    msg: "Firewall NOT found"
+  when: "'firewalld' not in ansible_facts.packages"
+   
+#- name: "Searching for a String"
+#  lineinfile:
+#    path: /var/www/html/index.php
+#    line: "localhost"
+#    state: present
+#  ignore_errors: yes
+#  check_mode: yes
+#  register: presence
+#  failed_when: presence is changed
+#  
+#- name: "sample task in case the String present in the file"
+#  debug: msg="DEBUG is enabled in Index file"
+#  when: presence is not changed
+
+#- debug:
+#    var: presence
+
+- name: "Handle the Error Searching for a String"
+  block:
+    - name: Searching for a String
+      register: string_local
+      shell: grep -w 'localhost' /var/www/html/index.php
+
+    #- debug:
+    #    var: string_local
+    
+    - assert:
+        that:
+          - "'localhost' in string_local.stdout"
+          #- string_local.rc == 0
+        #fail_msg: "'string_local' must be localhost"
+        success_msg: "localhost is enabled in index file"
+    #- name: "in case the string is present in the file"
+    #  debug:
+    #    msg: "localhost is enabled in index file"
+    #  when: string_local is changed
+  rescue:
+    - name: Replace IP MySQL database
+      replace:
+        path: /var/www/html/index.php
+        regexp: '172.20.1.101'
+        replace: 'localhost'
+
+- name: ENSURE values are set correctly in sysctl
+  ansible.posix.sysctl:
+    name: '{{ item.name }}'
+    value: '{{ item.value }}'
+    state: present
+    sysctl_file: /root/wilder/sysctl.conf
+    #sysctl_set: yes
+    reload: yes
+  loop:
+    - name: 'net.ipv6.conf.all.disable_ipv6'
+      value: '1'
+    - name: 'net.ipv6.conf.default.disable_ipv6'
+      value: '1'
+    - name: 'net.ipv6.conf.lo.disable_ipv6'
+      value: '1'
+    - name: 'vm.swappiness'
+      value: '1' 
+#  msg: "Protocols are defined in the file"
+#- debug:
+#    var: sysctl_conf
+
+ 
+
+#- debug:
+#    var: several_string
+
+#- name: In case the ITEMS is present in the file
+#  debug:
+#    msg: "strings are enabled in index file"
+#  when: several_string is changed
+
+
+- name: Handle the error by checking SELINUX
+  block:
+    - name: "Searching for a SELINUX String"
+      register: string_selinux
+      command: grep -w 'SELINUX=enforcing' /etc/sysconfig/selinux
+
+    - assert:
+        that:
+          - "'SELINUX=enforcing' in string_selinux.stdout"
+        success_msg: "SELINUX is DISABLED in selinux file, unit test passed"
+  rescue:
+    - name: Disable selinux
+      lineinfile:
+        path: /etc/sysconfig/selinux
+        regexp: '^SELINUX='
+        line:  SELINUX=enforcing
+
+#- name: "in case the string is present in the file"
+#  debug:
+#    msg: "SELINUX is DISABLED in index file"
+#  when: string_selinux is changed
+#- debug:
+#    var: string_selinux
+
+
+- name: Handle the error searching ENA Module
+  block:
+    - name: "verify ENA"
+      register: kernel_ena
+      shell: lsmod | grep -w 'ena'
+
+    - assert:
+        that:
+          - "'ena' in kernel_ena.stdout"
+        success_msg: "ENA is set successfully, unit test passed"
+#- debug:
+#    var: kernel_ena
+  rescue:
+    - name: ENA
+      command: 'modprobe ena'
+
+
+#    msg: "ENA is set successfully, unit test passed"
+#  when: "'ena' in kernel_ena.stdout"
+  #when: kernelmod.stdout == ena
+
+
+- name: Handle the error searching MVME Module
+  block:
+    - name: "verify NVME"
+      register: kernel_nvme
+      shell: lsmod | grep -w 'nvme'
+
+    - assert:
+        that:
+          - "'nvme' in kernel_nvme.stdout"
+        success_msg: "NVME is set successfully, unit test passed"
+  rescue:
+    - name: NVMe
+      command: 'modprobe nvme' 
+#- debug:
+#    var: kernel_nvme
+
+#- name: "in case the Kernel NVME is present in the file"
+#  debug:
+#    msg: "NVME is set successfully, unit test passed"
+#  when: "'nvme' in kernel_nvme.stdout"
+
+
+- name: Handle the error by checking the Time Zone
+  block:
+    - name: "verify tomezone"
+      command: timedatectl #| grep "America/New_York"
+      register: timez
+
+    - assert:
+        that:
+          - "'America/New_York' in timez.stdout"
+        success_msg: "America/New_York  is set successfully, unit test passed"
+  rescue:
+    - name: Set timezone to America/Los_Angeles
+      timezone:
+        name: America/Los_Angeles
+
+
+#- debug:
+#    var: timez
+#- name: "in case the Time New York is present in the Time Zone"
+#  debug:
+#    msg: "America/New_York  is set successfully, unit test passed"
+#  when: timez is changed
+
+
+#- name: check timezone New York
+#  assert:
+#    that:
+#     - time is changed
+#    success_msg: "'time' was configured"
+#    fail_msg: "'time' failed"
+
+
+
+
+#  when: time is changed
+#ignore_errors: '{{ ansible_check_mode }}'
+#- name: "print variable wild"
+#  debug:
+#    var: wild
+
+#- name: "PRESENT"
+#  debug: 
+#    var: wild
+#    msg: "EFECTY"
+#  when: wild is changed
+
+   #- lineinfile:
+    #   create: true
+     #  line: "{{ wild.stdout }}"
+      # dest: /osboxes/temp.txt
+   #  always_run: yes
+   #- name: "in case the string present in the file"
+   #  debug:
+   #    var: wild 
+   #    msg: "Localhost is not setted on index.php"
+   #  when: wild is changed

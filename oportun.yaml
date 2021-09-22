@@ -1,0 +1,22 @@
+-
+  name: Check connectivity to target servers
+  hosts: all
+  become: yes
+  tasks:
+    #- include_vars: variables.yml
+    - name: Ping test
+      ping:
+    - shell: curl http://169.254.169.254/latest/meta-data/instance-id 
+      register: instance_id
+    - shell: curl http://169.254.169.254/latest/meta-data/ami-id
+      register: ami_id
+    - shell: http://169.254.169.254/latest/meta-data/tags/Business_Owner
+      register: B_Owner
+      #warn: false
+    - lineinfile:
+        create: true
+        line:  "{{ ansible_default_ipv4.address }},\
+                {{ myoutput.stdout }},\
+                {{ myoutput2.stdout }}"
+        #command: 'ifconfig'
+        dest: /osboxes/temp.txt

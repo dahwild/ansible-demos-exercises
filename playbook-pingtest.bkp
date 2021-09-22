@@ -1,0 +1,19 @@
+-
+  name: Check connectivity to target servers
+  hosts: all
+  become: yes
+  tasks:
+    #- include_vars: variables.yml
+    - name: Ping test
+      ping:
+    - shell: ifconfig | grep mtu | grep [ep][n0-9]p[0-9] | sed 's/:.*$//g'
+      register: ifconfig_output
+    - lineinfile:
+        create: true
+        line:  "{{ ansible_default_ipv4.address }},\
+              #  {{ ansible_bios_version }},\
+              #  {{ ansible_cmdline.BOOT_IMAGE }},\
+              #  {{ ansible_os_family }},\
+                {{ ifconfig_output}}"
+        #command: 'ifconfig'
+        dest: /osboxes/temp.txt

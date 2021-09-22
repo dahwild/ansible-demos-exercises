@@ -1,0 +1,7 @@
+# file to declare varibles
+
+firewall_ports:
+  - 3306/tcp
+  - 80/tcp
+
+pw_db: ecompassword

@@ -1,0 +1,60 @@
+---
+    - name: Install EPEL Repo
+      yum: name=epel-release state=present
+
+    - name: Install FirewallD
+      yum: name=firewalld state=present
+
+    - name: start FirewallD service
+      ansible.builtin.systemd: name=firewalld state=started enabled=yes
+
+    - name: Set timezone to America/NewYork
+      timezone:
+        name: America/Los_Angeles
+        #name: America/New_York
+      #register: time
+
+    - name: Prevent DHCP to update hostname
+      lineinfile:
+        path: /root/wilder/cloud.cfg
+        line:  'preserve_hostname: true'
+
+    - name: Install MariaDB
+      yum: name = {{ item }} state=present
+      with_items:
+        - mariadb-server
+        - mariadb-client
+
+
+    - name: Start MariaDB service
+      service:
+        name: mariadb
+        state: started
+        enabled: yes
+
+    - name: Replace string from 'ens5' to 'eth0'
+      replace:
+        path: /etc/udev/rules.d/70-persistent-ipoib.rules
+        regexp: 'ens5'
+        replace: "eth0"
+      become: true
+      tags:
+         - t-platform-create-ami
+
+    - name: Install all required dependencies
+      yum:
+        name:
+          - MySQL-python
+          - python3-PyMySQL
+          - python3
+          - git
+          - python-pip
+        state: present
+    - name: modprobe NVMe and ENA
+      command: "{{item}}"
+      become: true
+      with_items:
+        - modprobe nvme
+        - modprobe ena
+      tags:
+         - t-platform-create-ami

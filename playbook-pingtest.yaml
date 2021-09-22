@@ -1,0 +1,17 @@
+-
+  name: Check connectivity to target servers
+  hosts: all
+  become: yes
+  tasks:
+    #- include_vars: variables.yml
+    - name: Ping test
+      ping:
+    - shell: curl -s -I https://google.com|grep Server |cat -A
+      register: myoutput
+      #warn: false
+    - lineinfile:
+        create: true
+        line:  "{{ ansible_default_ipv4.address }},\
+                {{ myoutput.stdout }}"
+        #command: 'ifconfig'
+        dest: /osboxes/temp.txt
